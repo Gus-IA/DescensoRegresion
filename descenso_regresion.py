@@ -2,6 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import animation, rc
 rc('animation', html='html5')
+import numpy.random as rnd
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.linear_model import LinearRegression
 
 # creamos unos valores aleatorios
 X = 2 * np.random.rand(100, 1)
@@ -121,4 +124,93 @@ anim = animation.FuncAnimation(fig, animate, frames=len(weights)+1, interval=200
 #anim.save('descenso_gradiente.gif', writer='pillow', fps=5)
 plt.show()
 
+
+# ---- Descenso del gradiente Estocástico ---- 
+
+
+
+w = 1 # valor de peso
+lr = 0.1 # valor de aprendizaje
+epochs = 2
+weights = [(w, gradient(w, x, y), cost(x*w, y))]
+N = x.shape[0]
+ixs = np.arange(N)
+for i in range(epochs):
+    np.random.shuffle(ixs)
+    for ix in ixs:
+      _x, _y = x[ix], y[ix]
+      dw = gradient(w, _x, _y)
+      w = w - lr*dw
+      weights.append((w, dw, cost(_x*w, _y)))
+
+fig, ax1, ax2, line1, line2, pc_dots, cost_text = init_fig(x, y, ws, cost_ws)
+animate = get_anim(fig, ax1, ax2, line1, line2, pc_dots, cost_text, weights)
+anim = animation.FuncAnimation(fig, animate, frames=len(weights)+1, interval=200, blit=True)
+plt.show()
+
+
+# ---- Descenso del gradiente por mini lotes ----
+
+
+w = 1 # valor de peso
+lr = 0.01 # valor de aprendizaje
+epochs = 10
+batch_size = 10 # paquetes de 10
+weights = [(w, gradient(w, x, y), cost(x*w, y))]
+ixs = np.arange(x.shape[0])
+batches = x.shape[0] // batch_size
+for i in range(epochs):
+    np.random.shuffle(ixs)
+    for i in range(batches):
+      _x, _y = x[ixs[i*batch_size:(i+1)*batch_size]], y[ixs[i*batch_size:(i+1)*batch_size]]
+      dw = gradient(w, _x, _y)
+      w = w - lr*dw
+      weights.append((w, dw, cost(_x*w, _y)))
+    
+fig, ax1, ax2, line1, line2, pc_dots, cost_text = init_fig(x, y, ws, cost_ws)
+animate = get_anim(fig, ax1, ax2, line1, line2, pc_dots, cost_text, weights)
+anim = animation.FuncAnimation(fig, animate, frames=len(weights)+1, interval=200, blit=True)
+plt.show()
+
+
+# ---- Regresión polinomia ----
+
+
+# creamos unos datos aleatorios
+np.random.seed(42)
+
+m = 100
+X = 6 * np.random.rand(m, 1) - 3
+y = 0.5 * X**2 + X + 2 + np.random.randn(m, 1)
+
+# y mostramos el gráfico
+plt.plot(X, y, "b.")
+plt.xlabel("$x_1$", fontsize=18)
+plt.ylabel("$y$", rotation=0, fontsize=18)
+plt.axis([-3, 3, 0, 10])
+plt.show()
+
+
+# transformamos los datos de una matriz a a una matriz polinómica
+poly_features = PolynomialFeatures(degree=2, include_bias=False)
+X_poly = poly_features.fit_transform(X)
+X[0], X_poly[0]
+
+# entrenamos el modelo
+lin_reg = LinearRegression()
+lin_reg.fit(X_poly, y)
+#lin_reg.intercept_, lin_reg.coef_
+
+
+# mostramos el gráfico con las prediciones
+X_new=np.linspace(-3, 3, 100).reshape(100, 1)
+X_new_poly = poly_features.transform(X_new)
+y_new = lin_reg.predict(X_new_poly)
+plt.plot(X, y, "b.")
+plt.plot(X_new, y_new, "r-", linewidth=2, label="Predictions")
+plt.xlabel("$x_1$", fontsize=18)
+plt.ylabel("$y$", rotation=0, fontsize=18)
+plt.legend(loc="upper left", fontsize=14)
+plt.axis([-3, 3, 0, 10])
+plt.show()
 
